@@ -1,4 +1,4 @@
-name: Fork Sync (Working)
+name: Fork Sync (Minimal)
 
 on:
   schedule:
@@ -26,85 +26,38 @@ jobs:
         git config --global user.name 'OpenClaw Fork Sync'
         git config --global user.email 'openclaw@localhost'
         
-    - name: Sync Fork Repository
+    - name: Minimal Fork Sync
       env:
         FORK_SYNC_PAT: ${{ secrets.FORK_SYNC_PAT }}
       run: |
-        echo "🔄 Starting fork sync for ${{ github.repository }}"
+        echo "🔄 Starting minimal fork sync"
         echo "📍 Repository: ${{ github.repository }}"
-        echo "🎯 Event: ${{ github.event_name }}"
         
-        # 简化而有效的同步逻辑
-        echo "🔧 Setting up GitHub CLI..."
-        
-        # 使用echo创建临时认证文件
-        echo "$FORK_SYNC_PAT" | gh auth login --with-token
-        
-        # 验证认证
-        echo "✅ Verifying authentication..."
-        gh auth status
-        
-        # 检查是否为fork
-        echo "🔍 Checking fork status..."
-        IS_FORK=$(gh repo view --json=fork --jq '.fork')
-        
-        if [ "$IS_FORK" = "true" ]; then
-          echo "✅ This is a fork repository"
+        # 最简化的测试
+        if command -v gh >/dev/null 2>&1; then
+          echo "✅ gh CLI available"
+          gh --version
           
-          # 获取上游仓库信息
-          UPSTREAM_OWNER=$(gh repo view --json=parent --jq '.parent.owner.login')
-          UPSTREAM_REPO=$(gh repo view --json=parent --jq '.parent.name')
-          UPSTREAM_URL="https://github.com/$UPSTREAM_OWNER/$UPSTREAM_REPO"
+          # 测试基本命令
+          echo "🧪 Testing basic commands..."
+          pwd
+          ls -la
           
-          echo "🔗 Upstream repository: $UPSTREAM_URL"
+          # 测试GitHub连接（不使用复杂认证）
+          echo "🔍 Testing GitHub connection..."
+          git ls-remote origin main
           
-          # 设置上游远程
-          git remote add upstream "$UPSTREAM_URL" 2>/dev/null || true
-          git remote set-url upstream "$UPSTREAM_URL"
-          
-          # 获取上游更新
-          echo "📥 Fetching upstream updates..."
-          git fetch upstream
-          git fetch origin
-          
-          # 获取当前分支
-          CURRENT_BRANCH=$(git branch --show-current)
-          echo "🌿 Current branch: $CURRENT_BRANCH"
-          
-          # 检查是否有新的更新
-          LOCAL_COMMIT=$(git rev-parse "origin/$CURRENT_BRANCH")
-          UPSTREAM_COMMIT=$(git rev-parse "upstream/$CURRENT_BRANCH")
-          
-          if [ "$LOCAL_COMMIT" = "$UPSTREAM_COMMIT" ]; then
-            echo "✅ Repository is up to date with upstream"
-          else
-            echo "📊 Updates detected, syncing..."
-            
-            # 执行同步
-            git reset --ff-only "upstream/$CURRENT_BRANCH"
-            
-            # 检查是否需要推送
-            if [ "$(git rev-parse HEAD)" != "$(git rev-parse "origin/$CURRENT_BRANCH")" ]; then
-              echo "🚀 Pushing updates..."
-              git push --force-with-lease origin "$CURRENT_BRANCH"
-              echo "✅ Sync completed successfully"
-            else
-              echo "✅ No changes to push"
-            fi
-          fi
+          echo "✅ Minimal test completed successfully"
         else
-          echo "ℹ️ This is not a fork repository, skipping sync"
+          echo "❌ gh CLI not available"
+          exit 1
         fi
         
     - name: Sync Summary
       if: always()
       run: |
-        echo "## 🔄 Fork Sync Completed" >> $GITHUB_STEP_SUMMARY
+        echo "## 🔄 Minimal Fork Sync Test" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Sync Time**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-        echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-        
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "**Force Sync**: ${{ github.event.inputs.force_sync }}" >> $GITHUB_STEP_SUMMARY
-        fi
+        echo "**Test Time**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+        echo "**Status**: Basic connectivity test completed" >> $GITHUB_STEP_SUMMARY
