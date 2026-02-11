@@ -1,0 +1,38 @@
+name: Minimal Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Minimal Test
+      env:
+        FORK_SYNC_PAT: ${{ secrets.FORK_SYNC_PAT }}
+      run: |
+        echo "Testing basic commands..."
+        
+        # 测试最基础的命令
+        echo "Repository: ${{ github.repository }}"
+        echo "Event: ${{ github.event_name }}"
+        
+        # 测试基础shell命令
+        pwd
+        ls -la
+        
+        # 测试gh是否可用
+        if command -v gh >/dev/null 2>&1; then
+          echo "✅ gh CLI is available"
+          gh --version
+        else
+          echo "❌ gh CLI not available"
+          exit 1
+        fi
+        
+        # 测试GitHub认证（不使用复杂命令）
+        echo "🧪 Testing auth..."
+        gh auth whoami 2>&1 || echo "⚠️ gh auth failed - this is expected"
+        
+        echo "✅ Minimal test completed"
